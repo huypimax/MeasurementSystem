@@ -1,4 +1,5 @@
-using MeasurementSystem.Backend;
+using MeasurementSystem.Backend.Services;
+using MeasurementSystem.Backend.Models;
 
 namespace MeasurementSystem.GUI
 {
