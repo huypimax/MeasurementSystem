@@ -1,44 +1,110 @@
-﻿using System;
-using System.Timers;
-using MeasurementSystem.Backend.Models;
+﻿using MeasurementSystem.Backend.Models;
+using System;
+using System.Globalization;
 
 namespace MeasurementSystem.Backend.Services
 {
     public class DataService
     {
-        public event Action<SensorData>? OnDataUpdated;
+        private SerialService _serial;
 
-        private System.Timers.Timer? _timer;
-        private readonly Random _rand = new Random();
+        public event Action<SensorData> OnDataUpdated;
+        public event Action<string> OnError;
 
-        public void StartFakeData(int intervalMs = 500)
+        public DataService(SerialService serial)
         {
-            _timer?.Stop();
+            _serial = serial;
 
-            _timer = new System.Timers.Timer(intervalMs);
-            _timer.Elapsed += (s, e) =>
+            _serial.OnRawDataReceived += HandleRawData;
+
+            _serial.OnDisconnected += () =>
             {
-                var data = GenerateFakeData();
-                OnDataUpdated?.Invoke(data);
+                OnError?.Invoke("Serial disconnected");
             };
-
-            _timer.Start();
         }
 
-        public void Stop()
+        private void HandleRawData(string raw)
         {
-            _timer?.Stop();
+            try
+            {
+                var data = ParseData(raw);
+                if (data != null)
+                {
+                    OnDataUpdated?.Invoke(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError?.Invoke("Parse error: " + ex.Message);
+            }
         }
 
-        private SensorData GenerateFakeData()
+        private SensorData ParseData(string raw)
         {
-            return new SensorData
+            if (string.IsNullOrWhiteSpace(raw))
+                throw new Exception("Empty data");
+
+            Console.WriteLine("RAW: " + raw);
+
+            var parts = raw.Split(';');
+
+            SensorData data = new SensorData();
+
+            bool hasTherm = false, hasLaser = false, hasPot = false, hasUltra = false;
+
+            foreach (var part in parts)
             {
-                Temperature = 20 + (float)_rand.NextDouble() * 10,      // 20–30°C
-                LaserDistance = (float)_rand.NextDouble() * 200,        // 0–200 cm
-                Angle = (float)_rand.NextDouble() * 300,                // 0–300 deg
-                UltrasonicDistance = (float)_rand.NextDouble() * 400    // 0–400 cm
-            };
+                var kv = part.Split(':');
+
+                if (kv.Length != 2)
+                    throw new Exception($"Invalid format: {part}");
+
+                string key = kv[0].Trim().ToUpper();
+                string value = kv[1].Trim();
+
+                if (!float.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out float parsedValue))
+                {
+                    throw new Exception($"Invalid number: {value}");
+                }
+
+                switch (key)
+                {
+                    case "THERMISTOR":
+                        data.Temperature = parsedValue;
+                        hasTherm = true;
+                        break;
+
+                    case "LASER":
+                        data.LaserDistance = parsedValue;
+                        hasLaser = true;
+                        break;
+
+                    case "POTENTIOMETER":
+                        data.Angle = parsedValue;
+                        hasPot = true;
+                        break;
+
+                    case "ULTRASONIC":
+                        data.UltrasonicDistance = parsedValue;
+                        hasUltra = true;
+                        break;
+                }
+            }
+
+            if (!hasTherm || !hasLaser || !hasPot || !hasUltra)
+                throw new Exception("Missing sensor data");
+
+            return data;
+        }
+
+        public void Connect(string port)
+        {
+            _serial.Connect(port);
+        }
+
+        public void Disconnect()
+        {
+            _serial.Disconnect();
         }
     }
 }

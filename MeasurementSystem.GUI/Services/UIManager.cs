@@ -7,24 +7,24 @@ namespace MeasurementSystem.GUI.Services
     public class UIManager
     {
         private DataService _dataService;
+        private SerialService _serialService;
 
-        // Đây là cái "chuông" để báo cho Form1 biết khi nào có data
         public event Action<SensorData> OnUiRefreshRequired;
 
         public UIManager()
         {
-            _dataService = new DataService();
-            // Khi Backend có data giả, nó sẽ gọi hàm này
+            _serialService = new SerialService();
+            _dataService = new DataService(_serialService);
+
             _dataService.OnDataUpdated += (data) =>
             {
-                // Truyền tiếp dữ liệu ra cho Form1
                 OnUiRefreshRequired?.Invoke(data);
             };
         }
 
-        public void StartSimulation()
+        public void Start()
         {
-            _dataService.StartFakeData(500); // 500ms một lần
+            _dataService.Connect("COM3");
         }
     }
 }

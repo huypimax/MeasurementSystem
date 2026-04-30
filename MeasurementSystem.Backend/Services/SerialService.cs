@@ -1,42 +1,52 @@
-﻿using System.IO.Ports;
+﻿using System;
+using System.IO.Ports;
 
 namespace MeasurementSystem.Backend.Services
 {
     public class SerialService
     {
-        private SerialPort? _serial;
+        private SerialPort _port;
 
-        public bool IsConnected => _serial != null && _serial.IsOpen;
+        public event Action<string> OnRawDataReceived;
+        public event Action OnDisconnected;
+
+        public bool IsConnected => _port != null && _port.IsOpen;
 
         public void Connect(string portName, int baudRate = 115200)
         {
-            _serial = new SerialPort(portName, baudRate);
-            _serial.Open();
+            try
+            {
+                _port = new SerialPort(portName, baudRate);
+                _port.NewLine = "\n";
+                _port.DataReceived += Port_DataReceived;
+                _port.Open();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Connect error: " + ex.Message);
+            }
         }
 
         public void Disconnect()
         {
-            if (_serial != null && _serial.IsOpen)
+            if (_port != null && _port.IsOpen)
             {
-                _serial.Close();
+                _port.Close();
+                OnDisconnected?.Invoke();
             }
         }
 
-        public void Send(string message)
+        private void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            if (IsConnected)
+            try
             {
-                _serial!.WriteLine(message);
+                string line = _port.ReadLine(); // đọc 1 dòng
+                OnRawDataReceived?.Invoke(line.Trim());
             }
-        }
-
-        public string? ReadLine()
-        {
-            if (IsConnected)
+            catch
             {
-                return _serial!.ReadLine();
+                OnDisconnected?.Invoke();
             }
-            return null;
         }
     }
 }
