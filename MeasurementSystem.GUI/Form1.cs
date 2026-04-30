@@ -1,5 +1,6 @@
 using System.Windows.Forms;
 using MeasurementSystem.GUI.Services;
+using MeasurementSystem.Backend.Services;
 using MeasurementSystem.Backend.Models;
 using System;
 
@@ -20,7 +21,7 @@ namespace MeasurementSystem.GUI
             _uiManager.OnUiRefreshRequired += UpdateLabels;
 
             // Bắt đầu chạy
-            _uiManager.StartSimulation();
+            _uiManager.Start();
         }
 
         private void UpdateLabels(SensorData data)
