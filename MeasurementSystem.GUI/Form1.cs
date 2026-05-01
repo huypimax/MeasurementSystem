@@ -1,42 +1,49 @@
 using System.Windows.Forms;
 using MeasurementSystem.GUI.Services;
-using MeasurementSystem.Backend.Services;
 using MeasurementSystem.Backend.Models;
 using System;
+// Thêm thư viện vẽ biểu đồ
+using System.Drawing;
 
 namespace MeasurementSystem.GUI
 {
     public partial class Form1 : Form
     {
         private UIManager _uiManager;
-
+        private DisplayManager _display;
+        private StatusManager _status;
+        private ChartManager _ctTemp, _ctLaser, _ctAngle, _ctUltra;
         public Form1()
         {
             InitializeComponent();
 
             // Khởi tạo người quản lý giao diện
             _uiManager = new UIManager();
+            _display = new DisplayManager(lblTemperature, lblLaser, lblAngle, lblUltrasonic);
+            _status = new StatusManager(lblStatus);
+            // Khởi tạo 4 biểu đồ với tên tương ứng
+            _ctTemp = new ChartManager(chartTemp, "Nhiệt độ");
+            _ctLaser = new ChartManager(chartLaser, "Laser");
+            _ctAngle = new ChartManager(chartAngle, "Góc quay");
+            _ctUltra = new ChartManager(chartUltra, "Siêu âm");
 
             // Đăng ký nhận dữ liệu từ người quản lý
-            _uiManager.OnUiRefreshRequired += UpdateLabels;
-
-            // Bắt đầu chạy
-            _uiManager.Start();
-        }
-
-        private void UpdateLabels(SensorData data)
-        {
-            if (this.InvokeRequired)
+            _uiManager.OnUiRefreshRequired += (data) =>
             {
-                this.Invoke(new Action(() => UpdateLabels(data)));
-                return;
-            }
+                _display.UpdateAll(data);
+                _ctTemp.AddDataPoint(data.Temperature);
+                _ctLaser.AddDataPoint(data.LaserDistance);
+                _ctAngle.AddDataPoint(data.Angle);
+                _ctUltra.AddDataPoint(data.UltrasonicDistance);
+            };
 
-            // Gán dữ liệu lên các nhãn (Label) bạn đã vẽ
-            lblTemperature.Text = data.Temperature.ToString("0.0") + " °C";
-            lblLaser.Text = data.LaserDistance.ToString("0.0") + " cm";
-            lblAngle.Text = data.Angle.ToString("0.0") + " °";
-            lblUltrasonic.Text = data.UltrasonicDistance.ToString("0.0") + " cm";
+            // Đăng ký nhận thông báo trạng thái kết nối
+            _uiManager.OnConnectionStatusChanged += (connected) =>
+            {
+                _status.SetStatus(connected);
+            };
+
+            _uiManager.ConnectDevice("COM3"); // Thay COM3 bằng cổng của bạn
         }
 
         private void label4_Click(object sender, EventArgs e)
@@ -65,6 +72,26 @@ namespace MeasurementSystem.GUI
         }
 
         private void label7_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox3_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void groupBox4_Enter(object sender, EventArgs e)
         {
 
         }
