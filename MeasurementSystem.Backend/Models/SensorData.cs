@@ -5,7 +5,7 @@
         // Thermistor
         public float Temperature { get; set; }   // °C
 
-        // Laser distance sensor
+        // Laser
         public float LaserDistance { get; set; } // cm
 
         // Potentiometer
