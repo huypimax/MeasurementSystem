@@ -7,8 +7,8 @@ namespace MeasurementSystem.Backend.Services
     {
         private SerialPort _port;
 
-        public event Action<string> OnRawDataReceived;
-        public event Action OnDisconnected;
+        public event Action<string>? OnRawDataReceived;
+        public event Action? OnDisconnected;
 
         public bool IsConnected => _port != null && _port.IsOpen;
 
@@ -36,11 +36,26 @@ namespace MeasurementSystem.Backend.Services
             }
         }
 
+        public void Send(string message)
+        {
+            if (IsConnected)
+            {
+                try
+                {
+                    _port.WriteLine(message);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Send error: " + ex.Message);
+                }
+            }
+        }
+
         private void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try
             {
-                string line = _port.ReadLine(); // đọc 1 dòng
+                string line = _port.ReadLine();
                 OnRawDataReceived?.Invoke(line.Trim());
             }
             catch
