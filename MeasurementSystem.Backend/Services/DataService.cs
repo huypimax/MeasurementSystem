@@ -7,13 +7,18 @@ namespace MeasurementSystem.Backend.Services
     public class DataService
     {
         private SerialService _serial;
+        private CalibrationService _calibService;
+        private CommandService _commandService;
 
-        public event Action<SensorData> OnDataUpdated;
-        public event Action<string> OnError;
+        public event Action<SensorData>? OnDataUpdated;
+        public event Action<string>? OnError;
 
         public DataService(SerialService serial)
         {
             _serial = serial;
+
+            _calibService = new CalibrationService();
+            _commandService = new CommandService(serial);
 
             _serial.OnRawDataReceived += HandleRawData;
 
@@ -30,6 +35,12 @@ namespace MeasurementSystem.Backend.Services
                 var data = ParseData(raw);
                 if (data != null)
                 {
+                    // Apply calibration
+                    data.Temperature = _calibService.Apply("THERMISTOR", data.Temperature);
+                    data.LaserDistance = _calibService.Apply("LASER", data.LaserDistance);
+                    data.Angle = _calibService.Apply("POTENTIOMETER", data.Angle);
+                    data.UltrasonicDistance = _calibService.Apply("ULTRASONIC", data.UltrasonicDistance);
+
                     OnDataUpdated?.Invoke(data);
                 }
             }
@@ -105,6 +116,18 @@ namespace MeasurementSystem.Backend.Services
         public void Disconnect()
         {
             _serial.Disconnect();
+        }
+
+        // Phase 5 APIs
+        public void SetCalibration(string sensor, float a, float b)
+        {
+            _calibService.SetCalibration(sensor, a, b);
+            _commandService.SendCalibration(sensor, a, b);
+        }
+
+        public void RequestRaw(string sensor)
+        {
+            _commandService.RequestRaw(sensor);
         }
     }
 }
