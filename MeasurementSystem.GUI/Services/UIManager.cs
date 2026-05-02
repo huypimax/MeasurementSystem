@@ -27,6 +27,17 @@ namespace MeasurementSystem.GUI.Services
             _serialService.OnDisconnected += () => OnConnectionStatusChanged?.Invoke(false);
         }
 
+        public void SetCalibration(string sensor, float a, float b)
+        {
+            // Gọi xuống DataService của Backend để thực hiện calib và gửi lệnh xuống MCU
+            _dataService.SetCalibration(sensor, a, b);
+        }
+
+        public void RequestRaw(string sensor)
+        {
+            _dataService.RequestRaw(sensor);
+        }
+
         public void ConnectDevice(string portName)
         {
             try
