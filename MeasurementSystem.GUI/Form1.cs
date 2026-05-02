@@ -2,7 +2,6 @@ using System.Windows.Forms;
 using MeasurementSystem.GUI.Services;
 using MeasurementSystem.Backend.Models;
 using System;
-// Thêm thư viện vẽ biểu đồ
 using System.Drawing;
 
 namespace MeasurementSystem.GUI
@@ -10,6 +9,7 @@ namespace MeasurementSystem.GUI
     public partial class Form1 : Form
     {
         private UIManager _uiManager;
+        private CalibPresenter _calibPresenter;
         private DisplayManager _display;
         private StatusManager _status;
         private ChartManager _ctTemp, _ctLaser, _ctAngle, _ctUltra;
@@ -17,8 +17,16 @@ namespace MeasurementSystem.GUI
         {
             InitializeComponent();
 
+            // --- QUÉT CỔNG COM HIỆN ĐANG CẮM ----------
+            string[] ports = System.IO.Ports.SerialPort.GetPortNames();
+            cboPorts.Items.Clear();
+            cboPorts.Items.AddRange(ports);
+            if (ports.Length > 0) cboPorts.SelectedIndex = 0;
+            // ------------------------------------------
+
             // Khởi tạo người quản lý giao diện
             _uiManager = new UIManager();
+            _calibPresenter = new CalibPresenter(_uiManager);
             _display = new DisplayManager(lblTemperature, lblLaser, lblAngle, lblUltrasonic);
             _status = new StatusManager(lblStatus);
             // Khởi tạo 4 biểu đồ với tên tương ứng
@@ -35,6 +43,7 @@ namespace MeasurementSystem.GUI
                 _ctLaser.AddDataPoint(data.LaserDistance);
                 _ctAngle.AddDataPoint(data.Angle);
                 _ctUltra.AddDataPoint(data.UltrasonicDistance);
+                lblRawADC.Text = data.UltrasonicDistance.ToString();
             };
 
             // Đăng ký nhận thông báo trạng thái kết nối
@@ -42,8 +51,31 @@ namespace MeasurementSystem.GUI
             {
                 _status.SetStatus(connected);
             };
+        }
 
-            _uiManager.ConnectDevice("COM3"); // Thay COM3 bằng cổng của bạn
+        private void btnSavePoint_Click(object sender, EventArgs e)
+        {
+            _calibPresenter.HandleSavePoint(lblRawADC.Text, txtRealInput.Text, lblPointCount);
+        }
+
+        private void btnCalculateAndSend_Click(object sender, EventArgs e)
+        {
+            _calibPresenter.HandleCalculateAndSend(txtA, txtB);
+        }
+
+        private void btnReadRaw_Click(object sender, EventArgs e)
+        {
+            _uiManager.RequestRaw("LOAD");
+        }
+
+        private void btnConnect_Click(object sender, EventArgs e)
+        {
+            _calibPresenter.HandleConnect(cboPorts.Text);
+        }
+
+        private void btnDisconnect_Click(object sender, EventArgs e)
+        {
+            _calibPresenter.HandleDisconnect();
         }
 
         private void label4_Click(object sender, EventArgs e)
@@ -92,6 +124,31 @@ namespace MeasurementSystem.GUI
         }
 
         private void groupBox4_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click_2(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label5_Click_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label6_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click_3(object sender, EventArgs e)
         {
 
         }
