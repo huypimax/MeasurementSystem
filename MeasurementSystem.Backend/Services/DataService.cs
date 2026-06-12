@@ -7,7 +7,6 @@ namespace MeasurementSystem.Backend.Services
     public class DataService
     {
         private SerialService _serial;
-        private CalibrationService _calibService;
         private CommandService _commandService;
 
         public event Action<SensorData>? OnDataUpdated;
@@ -17,7 +16,6 @@ namespace MeasurementSystem.Backend.Services
         {
             _serial = serial;
 
-            _calibService = new CalibrationService();
             _commandService = new CommandService(serial);
 
             _serial.OnRawDataReceived += HandleRawData;
@@ -35,12 +33,6 @@ namespace MeasurementSystem.Backend.Services
                 var data = ParseData(raw);
                 if (data != null)
                 {
-                    // Apply calibration
-                    data.Temperature = _calibService.Apply("THERMISTOR", data.Temperature);
-                    data.LaserDistance = _calibService.Apply("LASER", data.LaserDistance);
-                    data.Angle = _calibService.Apply("POTENTIOMETER", data.Angle);
-                    data.UltrasonicDistance = _calibService.Apply("ULTRASONIC", data.UltrasonicDistance);
-
                     OnDataUpdated?.Invoke(data);
                 }
             }
@@ -118,16 +110,39 @@ namespace MeasurementSystem.Backend.Services
             _serial.Disconnect();
         }
 
-        // Phase 5 APIs
-        public void SetCalibration(string sensor, float a, float b)
-        {
-            _calibService.SetCalibration(sensor, a, b);
-            _commandService.SendCalibration(sensor, a, b);
-        }
-
         public void RequestRaw(string sensor)
         {
             _commandService.RequestRaw(sensor);
+        }
+
+        public void CapturePoint1(string sensor)
+        {
+            _commandService.CapturePoint1(sensor);
+        }
+
+        public void CapturePoint2(string sensor)
+        {
+            _commandService.CapturePoint2(sensor);
+        }
+
+        public void SetReference1(string sensor, float value)
+        {
+            _commandService.SetReference1(sensor, value);
+        }
+
+        public void SetReference2(string sensor, float value)
+        {
+            _commandService.SetReference2(sensor, value);
+        }
+
+        public void CalculateCalibration(string sensor)
+        {
+            _commandService.CalculateCalibration(sensor);
+        }
+
+        public void SaveCalibration(string sensor)
+        {
+            _commandService.SaveCalibration(sensor);
         }
     }
 }
